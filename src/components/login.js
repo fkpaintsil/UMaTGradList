@@ -1,48 +1,58 @@
 import axios from 'axios';
 import { useState } from 'react';
-import { toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import Button from 'react-bootstrap/Button';
+import { API_BASE } from '../constants';
+import Toast from '../utils/Toast';
+import SpinnerUtil from '../utils/SpinnerUtil';
 
 function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState();
+  const [username, setUsername] = useState();
   const [password, setPassword] = useState();
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleLoginClick = (event) => {
+    setIsLoading(true);
     event.preventDefault();
     axios
-      .post('http://localhost:8080/login', { email, password })
+      .post(`${API_BASE}/auth/login`, { username, password })
       .then((res) => {
-        localStorage.setItem('token', res.data.token);
-        toast.success('Login successful!');
+        localStorage.setItem('token', res.data);
+
+        Toast('success', 'Login successful!');
+        setIsLoading(false);
         navigate('/dashboard');
       })
       .catch((error) => {
-        toast.error(error.response.data.message);
+        setIsLoading(false);
+        Toast('error', 'Invalid Username or Password');
       });
   };
 
   const handleInputChange = (event) => {
     event.preventDefault();
     const formData = new FormData(event.target.form);
-    setEmail(formData.get('email'));
+    setUsername(formData.get('username'));
     setPassword(formData.get('password'));
   };
 
   return (
-    <div className="container w-25 my-5">
+    <>
+    {isLoading && <SpinnerUtil />}
+    {!isLoading && <div className="container w-25 my-5">
       {' '}
       <form onChange={handleInputChange}>
         <div className="form-outline mb-4">
-          <label className="form-label" htmlFor="email">
-            Email address
+          <label className="form-label" htmlFor="username">
+            Username
           </label>
           <input
-            type="email"
-            id="email"
+            type="username"
+            id="username"
             className="form-control"
-            name="email"
+            name="username"
           />
         </div>
 
@@ -57,7 +67,8 @@ function Login() {
             className="form-control"
           />
         </div>
-        <Button variant="success"
+        <Button
+          variant="success"
           type="button"
           className="btn btn-primary btn-block mb-4 w-100"
           onClick={(event) => handleLoginClick(event)}
@@ -65,20 +76,8 @@ function Login() {
           Sign in
         </Button>
       </form>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      <ToastContainer />
-    </div>
+    </div>}
+    </>
   );
 }
 

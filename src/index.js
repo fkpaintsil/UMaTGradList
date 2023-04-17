@@ -5,8 +5,6 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import Dashboard from './components/dashboard';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import "react-toastify/dist/ReactToastify.css";
-// import 
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Login from './components/login';

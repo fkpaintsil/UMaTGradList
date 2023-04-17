@@ -1,11 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import axios from 'axios';
 import Graduates from './graduates';
 import Button from 'react-bootstrap/Button';
-import { toast, ToastContainer } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../constants';
+import Toast from '../utils/Toast';
+import SpinnerUtil from '../utils/SpinnerUtil';
 
 function Dashboard() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+    }
+
+    //TODO: Validate token
+  }, []);
 
   const [file, setFile] = useState(null);
 
@@ -14,20 +28,25 @@ function Dashboard() {
     if (!file) {
       return;
     }
-
+    setIsLoading(true);
     const formData = new FormData();
     formData.append('file', file);
     axios
-    .post("http://localhost:8080/graduates/upload-graduates-csv", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    })
-      .then((data) => {
-        toast.success('file uploaded successfully')
-        window.location.reload()
+      .post(`${API_BASE}/graduates/upload-graduates-csv`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .catch((err) => console.error(err));
+      .then((_data) => {
+        window.location.reload();
+        setIsLoading(false);
+        Toast('success', 'file uploaded successfully');
+      })
+      .catch((_err) => {
+        setIsLoading(false);
+        Toast('error', 'Failed to upload file');
+      });
   };
 
   const handleFileChange = (event) => {
@@ -36,32 +55,44 @@ function Dashboard() {
     }
   };
 
+  const handleLogoutClick = () => {
+    //TODO: post token to backend for invalidation
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
-    <div className="container mt-5">
-      <form encType="multipart/form-data" className='d-flex justify-content-end'>
-        <input
-        className="form-control w-50"
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-        />
-        <Button variant='success' onClick={(event) => handleUploadClick(event)} disabled={!file}>Upload</Button>
-      </form>
-      <Graduates />
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      <ToastContainer />
-    </div>
+    <>
+      {isLoading && <SpinnerUtil />}
+      {!isLoading && (
+        <div className="container mt-5">
+          <div className="d-flex justify-content-between">
+            <form encType="multipart/form-data">
+              <input
+                className="form-control"
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="success"
+                onClick={(event) => handleUploadClick(event)}
+                disabled={!file}
+              >
+                Upload
+              </Button>
+            </form>
+            <form>
+              <Button variant="danger" onClick={handleLogoutClick}>
+                Logout
+              </Button>
+            </form>
+          </div>
+
+          <Graduates />
+        </div>
+      )}
+    </>
   );
 }
 
